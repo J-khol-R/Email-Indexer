@@ -1,8 +1,9 @@
-package scripts
+package main
 
 import (
 	"bufio"
-	"log"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,16 +26,22 @@ func GenerateEmails() ([]models.Email, error) {
 		}
 
 		if !info.IsDir() {
+			// email, err := ReadFile(path)
+			// if err != nil {
+			// 	return err
+			// }
+			// arrayEmails = append(arrayEmails, *email)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 				email, err := ReadFile(path)
 				if err != nil {
-					log.Fatalf("Error al leer el archivo: %v", err)
+					return
 				}
 				mutex.Lock()
 				arrayEmails = append(arrayEmails, *email)
 				mutex.Unlock()
+				fmt.Printf("\r%s%%", path)
 			}()
 		}
 
@@ -42,7 +49,7 @@ func GenerateEmails() ([]models.Email, error) {
 	})
 
 	if err != nil {
-		return arrayEmails, err
+		return arrayEmails, fmt.Errorf("error en readfile: %v", err)
 	}
 
 	return arrayEmails, nil
@@ -56,6 +63,9 @@ func ReadFile(archivo string) (*models.Email, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	const maxTokenSize = 10 * 1024 * 1024
+	buf := make([]byte, maxTokenSize)
+	scanner.Buffer(buf, maxTokenSize)
 
 	email := &models.Email{}
 
@@ -123,4 +133,47 @@ func ReadFile(archivo string) (*models.Email, error) {
 	}
 
 	return email, nil
+}
+
+func GenerateNDJSON() (string, error) {
+	arrayEmails, err := GenerateEmails()
+	if err != nil {
+		return "", fmt.Errorf("error al generar los emails: %v", err)
+	}
+
+	fmt.Print("todos los emails procesados")
+	fmt.Print("creando ndjdon...")
+
+	var r models.Request
+
+	r.Index = "enron_mails"
+	r.Records = arrayEmails
+
+	fileName := r.Index + ".ndjson" // Nombre del archivo NDJSON
+	file, err := os.Create(fileName)
+	if err != nil {
+		return "", fmt.Errorf("error al crear el archivo ndjson: %v", err)
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	jsonData, err := json.MarshalIndent(r, "", "    ")
+	if err != nil {
+		return "", fmt.Errorf("error al convertir a json: %v", err)
+	}
+
+	_, err = writer.Write(jsonData)
+	if err != nil {
+		return "", fmt.Errorf("error al escribir en el archivo ndjson: %v", err)
+	}
+
+	err = writer.Flush()
+	if err != nil {
+		return "", fmt.Errorf("error al vaciar el búfer en el archivo ndjson: %v", err)
+	}
+
+	fmt.Print("archivo ndjson creado :)")
+
+	return fileName, nil
 }
