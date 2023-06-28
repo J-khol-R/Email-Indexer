@@ -11,7 +11,14 @@ import (
 func GetEmails(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "keyWord")
 
-	response, err := services.RequestZincsearch(key, 0, 20)
+	var datos map[string]int
+	err := json.NewDecoder(r.Body).Decode(&datos)
+	if err != nil {
+		http.Error(w, "Error al decodificar la respuesta: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response, err := services.RequestZincsearch(key, datos["inicio"], datos["fin"])
 	if err != nil {
 		http.Error(w, "Error al traer datos: "+err.Error(), http.StatusInternalServerError)
 		return

@@ -10,7 +10,7 @@ import (
 func main() {
 	r := chi.NewRouter()
 
-	r.Get("/word/{keyWord}", controllers.GetEmails)
+	r.Post("/word/{keyWord}", controllers.GetEmails)
 
 	handler := corsMiddleware(r)
 
@@ -23,7 +23,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		// Permitir los métodos HTTP especificados
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Methods", "POST")
 
 		// Permitir los encabezados HTTP especificados
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")

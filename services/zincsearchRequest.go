@@ -10,7 +10,7 @@ import (
 )
 
 func RequestZincsearch(key string, inicio, fin int) (models.ResponseZinc, error) {
-	url := "http://localhost:4080/api/emails/_search"
+	url := "http://localhost:4080/api/enron_mails/_search"
 
 	query := `{
 	    "search_type": "match",
