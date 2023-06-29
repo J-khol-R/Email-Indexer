@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/J-khol-R/Email-Indexer/controllers"
@@ -15,6 +16,7 @@ func main() {
 	handler := corsMiddleware(r)
 
 	http.ListenAndServe(":8080", handler)
+	fmt.Print("Escuchando correctamente el puerto- :8080")
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

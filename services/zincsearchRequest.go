@@ -4,14 +4,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/J-khol-R/Email-Indexer/models"
+	"github.com/joho/godotenv"
 )
 
-func RequestZincsearch(key string, inicio, fin int) (models.ResponseZinc, error) {
-	url := "http://localhost:4080/api/enron_mails/_search"
+type EnvConfig struct {
+	HostZinc string
+	HostBulk string
+}
 
+func GetEnvConfig() EnvConfig {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	envConfig := EnvConfig{
+		HostZinc: os.Getenv("HOSTZINCSEARCH"),
+		HostBulk: os.Getenv("HOSTBULK"),
+	}
+
+	return envConfig
+}
+
+func RequestZincsearch(key string, inicio, fin int) (models.ResponseZinc, error) {
+
+	// url := "http://localhost:4080/api/enron_mails/_search"
+	url := GetEnvConfig().HostZinc
 	query := `{
 	    "search_type": "match",
 	    "query":
