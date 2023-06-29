@@ -16,7 +16,7 @@ func GenerateEmails() ([]models.Email, error) {
 	var arrayEmails []models.Email
 	var mutex sync.Mutex
 
-	nombreArchivo := os.Args[1] + "/maildir"
+	nombreArchivo := os.Args[1]
 
 	var wg sync.WaitGroup
 
@@ -26,24 +26,20 @@ func GenerateEmails() ([]models.Email, error) {
 		}
 
 		if !info.IsDir() {
-			// email, err := ReadFile(path)
-			// if err != nil {
-			// 	return err
-			// }
-			// arrayEmails = append(arrayEmails, *email)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				emails, err := ReadFile(path)
+				emails, err := readFile(path)
 				if err != nil {
-					return
+					fmt.Print(err)
 				}
 				for _, email := range emails {
 					mutex.Lock()
 					arrayEmails = append(arrayEmails, email)
 					mutex.Unlock()
 				}
-				fmt.Printf("\r%s%%", path)
+				fmt.Printf("\r%s", "archivo leido correctamente:"+path)
+
 			}()
 		}
 
@@ -51,13 +47,13 @@ func GenerateEmails() ([]models.Email, error) {
 	})
 
 	if err != nil {
-		return arrayEmails, fmt.Errorf("error en readfile: %v", err)
+		return arrayEmails, err
 	}
 
 	return arrayEmails, nil
 }
 
-func ReadFile(archivo string) ([]models.Email, error) {
+func readFile(archivo string) ([]models.Email, error) {
 	file, err := os.Open(archivo)
 	if err != nil {
 		return []models.Email{}, err
@@ -65,6 +61,9 @@ func ReadFile(archivo string) ([]models.Email, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	const maxTokenSize = 10 * 1024 * 1024
+	buf := make([]byte, maxTokenSize)
+	scanner.Buffer(buf, maxTokenSize)
 
 	var emails []models.Email
 	var email models.Email
@@ -251,6 +250,10 @@ func ReadFile(archivo string) ([]models.Email, error) {
 			}
 
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return []models.Email{}, err
 	}
 
 	emails = append(emails, email)

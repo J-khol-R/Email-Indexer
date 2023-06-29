@@ -32,10 +32,6 @@ func main() {
 		return
 	}
 
-	// fmt.Print(filePath)
-
-	// filePath := "enron_mails.ndjson"
-
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("Error al leer el archivo:", err)
