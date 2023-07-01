@@ -27,20 +27,24 @@ func GenerateEmails() ([]models.Email, error) {
 
 		if !info.IsDir() {
 			wg.Add(1)
-			go func() {
+			go func() error {
 				defer wg.Done()
-				emails, err := readFile(path)
+				email, err := ReadFile(path)
 				if err != nil {
-					fmt.Print(err)
+					return err
 				}
-				for _, email := range emails {
-					mutex.Lock()
-					arrayEmails = append(arrayEmails, email)
-					mutex.Unlock()
-				}
+
+				mutex.Lock()
+				arrayEmails = append(arrayEmails, email)
+				mutex.Unlock()
+
 				fmt.Printf("\r%s", "archivo leido correctamente:"+path)
 
+				return nil
 			}()
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -53,10 +57,10 @@ func GenerateEmails() ([]models.Email, error) {
 	return arrayEmails, nil
 }
 
-func readFile(archivo string) ([]models.Email, error) {
+func ReadFile(archivo string) (models.Email, error) {
 	file, err := os.Open(archivo)
 	if err != nil {
-		return []models.Email{}, err
+		return models.Email{}, err
 	}
 	defer file.Close()
 
@@ -65,8 +69,9 @@ func readFile(archivo string) ([]models.Email, error) {
 	buf := make([]byte, maxTokenSize)
 	scanner.Buffer(buf, maxTokenSize)
 
-	var emails []models.Email
 	var email models.Email
+	var submail models.SubEmail
+	var submails []models.SubEmail
 
 	//hace referencia al nombre del campo actual ej: from: <-- ese seria el campo
 	var campoActual string
@@ -106,28 +111,44 @@ func readFile(archivo string) ([]models.Email, error) {
 		//aqui se guardara el contenido final de cada email
 		var mensaje strings.Builder
 
-		switch campo {
-		case "Message-ID":
+		switch {
+		case strings.Contains(campo, "Message-ID"):
 			email.MessageID += valor
 			campoActual = campo
-		case "Date":
+		case strings.Contains(campo, "Date"):
 			email.Date += valor
 			campoActual = campo
-		case "From":
-			email.From += valor
+		case strings.Contains(campo, "From"):
+			if condicion == "X-FileName" {
+				email.From += valor
+			} else {
+				submail.From += valor
+			}
 			campoActual = campo
-		case "Sent":
-			email.Sent += valor
+		case strings.Contains(campo, "Sent"):
+			if condicion == "X-FileName" {
+				email.Sent += valor
+			} else {
+				submail.Send += valor
+			}
 			campoActual = campo
-		case "To":
-			email.To += valor
+		case strings.Contains(campo, "To"):
+			if condicion == "X-FileName" {
+				email.To += valor
+			} else {
+				submail.To += valor
+			}
 			campoActual = campo
-		case "Subject":
-			email.Subject += valor
+		case strings.Contains(campo, "Subject"):
+			if condicion == "X-FileName" {
+				email.Subject += valor
+			} else {
+				submail.Subject += valor
+			}
 			campoActual = campo
 
 			//si el contador es mayor a cero significa que ya estamos ubicados
-			//en los submensajes del archivos
+			//en los submensajes del archivo
 			if contador > 0 {
 
 				//esta variable sirve para identificar si vamos a comenzar un nuevo email respecto
@@ -144,15 +165,16 @@ func readFile(archivo string) ([]models.Email, error) {
 
 					//si el mensaje contiene las siguientes cadenas significa que el mensaje
 					//anterior termino y que el nuevo comienza
-					if strings.Contains(linea, "-----Original Message-----") ||
+					if strings.Contains(linea, "----- Original Message -----") ||
+						strings.Contains(linea, "-----Original Message-----") ||
 						strings.Contains(linea, "---------------------- Forwarded by") ||
 						strings.Contains(linea, "___________________") {
 
 						//añado el mensaje a el email pasado antes de añadirlo al array
-						email.Content = mensaje.String()
+						submail.Content = mensaje.String()
 
-						emails = append(emails, email)
-						email = models.Email{}
+						submails = append(submails, submail)
+						submail = models.SubEmail{}
 
 						//damos la indicacion de que el nuevo email comenzo
 						newEmail = true
@@ -172,46 +194,54 @@ func readFile(archivo string) ([]models.Email, error) {
 				//si nunca se dio la condicion de que habia un nuevo mensaje
 				//guardamos el mensaje en el email actual
 				if !newEmail {
-					email.Content = mensaje.String()
+					submail.Content = mensaje.String()
 				}
 			}
-		case "Cc":
-			email.Cc += valor
+		case strings.Contains(campo, "Cc"):
+			if condicion == "X-FileName" {
+				email.Cc += valor
+			} else {
+				submail.Cc += valor
+			}
 			campoActual = campo
-		case "cc":
-			email.Cc += valor
+		case strings.Contains(campo, "cc"):
+			if condicion == "X-FileName" {
+				email.Cc += valor
+			} else {
+				submail.Cc += valor
+			}
 			campoActual = campo
-		case "Mime-Version":
+		case strings.Contains(campo, "Mime-Version"):
 			email.MimeVersion += valor
 			campoActual = campo
-		case "Content-Type":
+		case strings.Contains(campo, "Content-Type"):
 			email.ContentType += valor
 			campoActual = campo
-		case "Content-Transfer-Encoding":
+		case strings.Contains(campo, "Content-Transfer-Encoding"):
 			email.ContentTransferEncoding += valor
 			campoActual = campo
-		case "Bcc":
+		case strings.Contains(campo, "Bcc"):
 			email.Bcc += valor
 			campoActual = campo
-		case "X-From":
+		case strings.Contains(campo, "X-From"):
 			email.XFrom += valor
 			campoActual = campo
-		case "X-To":
+		case strings.Contains(campo, "X-To"):
 			email.XTo += valor
 			campoActual = campo
-		case "X-cc":
+		case strings.Contains(campo, "X-cc"):
 			email.Xcc += valor
 			campoActual = campo
-		case "X-bcc":
+		case strings.Contains(campo, "X-bcc"):
 			email.Xbcc += valor
 			campoActual = campo
-		case "X-Folder":
+		case strings.Contains(campo, "X-Folder"):
 			email.XFolder += valor
 			campoActual = campo
-		case "X-Origin":
+		case strings.Contains(campo, "X-Origin"):
 			email.XOrigin += valor
 			campoActual = campo
-		case "X-FileName":
+		case strings.Contains(campo, "X-FileName"):
 			email.XFileName += valor
 			campoActual = campo
 
@@ -224,15 +254,13 @@ func readFile(archivo string) ([]models.Email, error) {
 					continue
 				}
 
-				if strings.Contains(linea, " -----Original Message-----") ||
+				if strings.Contains(linea, "----- Original Message -----") ||
+					strings.Contains(linea, "-----Original Message-----") ||
 					strings.Contains(linea, "---------------------- Forwarded by") ||
 					strings.Contains(linea, "___________________") {
 
 					//añado el mensaje a el email pasado antes de añadirlo al array
 					email.Content = mensaje.String()
-
-					emails = append(emails, email)
-					email = models.Email{}
 					condicion = "Subject"
 					newEmail = true
 					contador++
@@ -252,94 +280,15 @@ func readFile(archivo string) ([]models.Email, error) {
 		}
 	}
 
+	submails = append(submails, submail)
+	email.Treads = submails
+
 	if err := scanner.Err(); err != nil {
-		return []models.Email{}, err
+		return models.Email{}, err
 	}
 
-	emails = append(emails, email)
-
-	return emails, nil
+	return email, nil
 }
-
-// func ReadFile(archivo string) (*models.Email, error) {
-// 	file, err := os.Open(archivo)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer file.Close()
-
-// 	scanner := bufio.NewScanner(file)
-// 	const maxTokenSize = 10 * 1024 * 1024
-// 	buf := make([]byte, maxTokenSize)
-// 	scanner.Buffer(buf, maxTokenSize)
-
-// 	email := &models.Email{}
-
-// 	for scanner.Scan() {
-// 		linea := scanner.Text()
-// 		if strings.TrimSpace(linea) == "" {
-// 			continue
-// 		}
-
-// 		campoValor := strings.SplitN(linea, ":", 2)
-// 		if len(campoValor) != 2 {
-// 			continue
-// 		}
-
-// 		campo := strings.TrimSpace(campoValor[0])
-// 		valor := strings.TrimSpace(campoValor[1])
-
-// 		var mensaje strings.Builder
-
-// 		switch campo {
-// 		case "Message-ID":
-// 			email.MessageID = valor
-// 		case "Date":
-// 			email.Date = valor
-// 		case "From":
-// 			email.From = valor
-// 		case "To":
-// 			email.To = valor
-// 		case "Subject":
-// 			email.Subject = valor
-// 		case "Mime-Version":
-// 			email.MimeVersion = valor
-// 		case "Content-Type":
-// 			email.ContentType = valor
-// 		case "Content-Transfer-Encoding":
-// 			email.ContentTransferEncoding = valor
-// 		case "X-From":
-// 			email.XFrom = valor
-// 		case "X-To":
-// 			email.XTo = valor
-// 		case "X-cc":
-// 			email.Xcc = valor
-// 		case "X-bcc":
-// 			email.Xbcc = valor
-// 		case "X-Folder":
-// 			email.XFolder = valor
-// 		case "X-Origin":
-// 			email.XOrigin = valor
-// 		case "X-FileName":
-// 			email.XFileName = valor
-
-// 			for scanner.Scan() {
-// 				linea := scanner.Text()
-// 				if strings.TrimSpace(linea) == "" {
-// 					continue
-// 				}
-// 				mensaje.WriteString(linea)
-// 			}
-// 			email.Content = mensaje.String()
-// 		}
-// 	}
-
-// 	if err := scanner.Err(); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return email, nil
-// }
 
 func GenerateNDJSON() (string, error) {
 	arrayEmails, err := GenerateEmails()

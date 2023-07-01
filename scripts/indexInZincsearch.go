@@ -9,8 +9,6 @@ import (
 	"os"
 	"runtime/pprof"
 	"time"
-
-	"github.com/J-khol-R/Email-Indexer/services"
 )
 
 func main() {
@@ -34,6 +32,8 @@ func main() {
 		return
 	}
 
+	// filePath := "enron_mails.ndjson"
+
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("Error al leer el archivo:", err)
@@ -43,8 +43,7 @@ func main() {
 	fmt.Print("se leyo el archivo :)")
 
 	// Crear una solicitud HTTP
-	// url := "http://localhost:4080/api/_bulkv2"
-	url := services.GetEnvConfig().HostBulk
+	url := "http://localhost:4080/api/_bulkv2"
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		fmt.Println("Error al crear la solicitud:", err)
