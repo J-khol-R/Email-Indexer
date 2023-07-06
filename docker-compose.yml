@@ -1,0 +1,43 @@
+version: '3'
+services:
+  zincsearch:
+    image: public.ecr.aws/zinclabs/zinc:latest
+    environment:
+      - ZINC_FIRST_ADMIN_USER=admin
+      - ZINC_FIRST_ADMIN_PASSWORD=Complexpass#123
+    ports:
+      - '4080:4080'
+    restart: on-failure
+    volumes:
+      - ./zincsearch:/var/lib/zinc
+    networks:
+      - indexer-red
+  api:
+    build:
+      context: ./back
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    depends_on:
+      - zincsearch
+    restart: on-failure
+    volumes:
+      - ./back:/usr/src/app
+    networks:
+      - indexer-red
+  web:
+    build:
+      context: ./vite-project
+      dockerfile: Dockerfile
+    ports:
+      - 5173:5173
+    restart: on-failure
+    volumes:
+      - ./vite-project:/app
+      - /app/node_modules
+    networks:
+      - indexer-red
+
+networks:
+  indexer-red:
+    driver: bridge
