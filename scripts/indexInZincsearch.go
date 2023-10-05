@@ -43,6 +43,7 @@ func main() {
 	fmt.Print("se leyo el archivo :)")
 
 	// Crear una solicitud HTTP
+	// url := "http://email-indexer-zincsearch-1:4080/api/_bulkv2"
 	url := "http://localhost:4080/api/_bulkv2"
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {

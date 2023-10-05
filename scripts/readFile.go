@@ -64,6 +64,7 @@ func ReadFile(archivo string) (models.Email, error) {
 	}
 	defer file.Close()
 
+	//permite leer archivos mas grandes
 	scanner := bufio.NewScanner(file)
 	const maxTokenSize = 10 * 1024 * 1024
 	buf := make([]byte, maxTokenSize)
@@ -168,6 +169,7 @@ func ReadFile(archivo string) (models.Email, error) {
 					if strings.Contains(linea, "----- Original Message -----") ||
 						strings.Contains(linea, "-----Original Message-----") ||
 						strings.Contains(linea, "---------------------- Forwarded by") ||
+						strings.Contains(linea, "----- Forwarded by") ||
 						strings.Contains(linea, "___________________") {
 
 						//añado el mensaje a el email pasado antes de añadirlo al array
@@ -256,6 +258,7 @@ func ReadFile(archivo string) (models.Email, error) {
 
 				if strings.Contains(linea, "----- Original Message -----") ||
 					strings.Contains(linea, "-----Original Message-----") ||
+					strings.Contains(linea, "----- Forwarded by") ||
 					strings.Contains(linea, "---------------------- Forwarded by") ||
 					strings.Contains(linea, "___________________") {
 

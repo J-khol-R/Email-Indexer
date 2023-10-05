@@ -1,0 +1,7 @@
+back/scripts/enron_mail20110402/
+back/scripts/maildir/
+back/scripts/*.svg
+back/scripts/*.pprof
+.gitignore
+README
+.dockerignore

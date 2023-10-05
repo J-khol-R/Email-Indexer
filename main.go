@@ -11,12 +11,17 @@ import (
 func main() {
 	r := chi.NewRouter()
 
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hola, bienvenidos a mi API :)"))
+	})
+
 	r.Post("/word/{keyWord}", controllers.GetEmails)
 
 	handler := corsMiddleware(r)
 
-	http.ListenAndServe(":8080", handler)
-	fmt.Print("Escuchando correctamente el puerto- :8080")
+	fmt.Print("Escuchando correctamente el puerto- :8000")
+
+	http.ListenAndServe(":8000", handler)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
